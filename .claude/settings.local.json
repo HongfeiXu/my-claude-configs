@@ -4,7 +4,11 @@
       "WebFetch(domain:github.com)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cmd /c install-skills.cmd)",
+      "Bash(robocopy:*)",
+      "Bash(MSYS_NO_PATHCONV=1 robocopy:*)",
+      "Bash(bash:*)"
     ]
   }
 }
