@@ -6,8 +6,8 @@
 # 📰 The Odd Thing About Modi's Mojo
 # 莫迪魔力的奇特之处
 
-**Leaders | 社论**  
-*Constraints make India's prime minister govern better*  
+**Leaders | 社论**
+*Constraints make India's prime minister govern better*
 *约束反而让印度总理执政得更好*
 
 📅 January 22nd, 2026

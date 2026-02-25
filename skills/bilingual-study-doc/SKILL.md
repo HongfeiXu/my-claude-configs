@@ -20,77 +20,29 @@ Create professional bilingual study documents from English periodicals for langu
 
 ### Step 1: Extract Content from Source
 
-```python
-import pdfplumber
+**Preferred**: Use Claude's built-in `Read` tool to read PDF files directly (supports up to 20 pages per request via the `pages` parameter). This requires no extra dependencies.
 
-def extract_pdf_text(pdf_path):
-    """Extract text from PDF, preserving structure"""
-    all_pages = []
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if text:
-                all_pages.append(text)
-    return '\n\n'.join(all_pages)
+**Fallback** (for large PDFs or batch processing): Use the helper script at `scripts/extract_pdf.py`:
+
+```bash
+pip install --user pdfplumber
+python scripts/extract_pdf.py input.pdf -o output.json
+python scripts/extract_pdf.py input.pdf -f economist -o output.json  # Economist-specific splitting
 ```
 
-For PDF files, use `pdfplumber` (install: `pip install pdfplumber --break-system-packages`).
+The script handles: text extraction, paragraph merging (fixing PDF line breaks), article splitting (Economist URL markers), and ad/noise cleanup.
 
 ### Step 2: Identify Article Boundaries
 
-Common patterns for article separation:
+Common patterns for article separation (see `references/publications.md` for per-publication details):
 - URL markers: `This article was downloaded from...`
 - Section headers: `Leaders`, `Business`, `Culture`, etc.
 - Date lines: `January 22nd 2026`
 - Bylines and author credits
 
-```python
-import re
-
-def split_articles(full_text, separator_pattern):
-    """Split text into individual articles"""
-    # Example for Economist-style documents
-    pattern = r'This article was downloaded by.*?from (https://[^\n]+)'
-    matches = list(re.finditer(pattern, full_text))
-    
-    articles = []
-    for i, match in enumerate(matches):
-        start = matches[i-1].end() if i > 0 else 0
-        end = match.start()
-        content = full_text[start:end].strip()
-        url = match.group(1)
-        articles.append({'content': content, 'url': url})
-    return articles
-```
-
 ### Step 3: Clean and Format Paragraphs
 
-PDF extraction often breaks paragraphs at line endings. Fix this:
-
-```python
-def fix_paragraphs(text):
-    """Merge lines broken by PDF extraction into proper paragraphs"""
-    lines = text.split('\n')
-    result = []
-    current_para = []
-    
-    for line in lines:
-        line = line.strip()
-        if not line:
-            if current_para:
-                result.append(' '.join(current_para))
-                current_para = []
-        else:
-            # Handle hyphenated words at line breaks
-            if current_para and current_para[-1].endswith('-'):
-                current_para[-1] = current_para[-1][:-1] + line
-            else:
-                current_para.append(line)
-    
-    if current_para:
-        result.append(' '.join(current_para))
-    return result
-```
+PDF extraction often breaks paragraphs at line endings. The `scripts/extract_pdf.py` script handles this automatically (merging broken lines, fixing hyphenated words). When using the `Read` tool directly, manually check for and fix mid-sentence line breaks before translating.
 
 ### Step 4: Generate Bilingual Markdown
 
@@ -100,30 +52,28 @@ Use this output structure:
 # [Publication Name] [Issue Date]
 
 > **学习指南 | Study Guide**
-> 格式：英文原文（引用块）后紧跟中文翻译
+> 格式：英文原文后紧跟中文翻译（灰色引用块）
 
 ---
 
 ## [Article Title]
 ## [中文标题]
 
-**[Section] | [分类]**  
-*[Subtitle]*  
+**[Section] | [分类]**
+*[Subtitle]*
 *[副标题翻译]*
 
-📅 [Date]
+---
+
+[English paragraph 1]
+
+> [中文翻译段落 1]
 
 ---
 
-> [English paragraph 1]
+[English paragraph 2]
 
-[中文翻译段落 1]
-
----
-
-> [English paragraph 2]
-
-[中文翻译段落 2]
+> [中文翻译段落 2]
 
 ---
 
@@ -185,7 +135,7 @@ Before finalizing output, verify:
 - [ ] Vocabulary includes phonetics
 - [ ] Example sentences are from original text
 - [ ] Markdown renders correctly
-- [ ] File saved to `/mnt/user-data/outputs/`
+- [ ] File saved to user's preferred output directory (ask user if not specified)
 
 ## Common Publication Patterns
 
@@ -197,6 +147,16 @@ Before finalizing output, verify:
 | Wired | Author bylines | Ideas, Gear, Science, etc. |
 | Time | Page breaks | Nation, World, Ideas, etc. |
 | HBR | Article titles | Features, Ideas, Case Studies |
+
+## Troubleshooting
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| PDF text extraction garbled | Scanned/image-based PDF | Ask user for a text-based PDF or OCR version |
+| PDF is encrypted/password-protected | DRM protection | Cannot process; ask user to provide an unlocked version |
+| pdfplumber not installed | Missing dependency | Use Claude's built-in `Read` tool instead (supports PDF natively, up to 20 pages per request) |
+| Large PDF (>20 pages) | Exceeds Read tool limit | Use `Read` with `pages` parameter for specific ranges, or use `scripts/extract_pdf.py` |
+| Broken paragraphs after extraction | PDF line-break artifacts | Run through `scripts/extract_pdf.py` or manually merge lines before translating |
 
 ## Tips for Better Results
 
